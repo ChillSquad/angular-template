@@ -1,21 +1,14 @@
-import { Component } from '@angular/core';
-import { HeaderComponent } from './components/header/header.component';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { RouterOutlet } from '@angular/router';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {provideNativeDateAdapter} from '@angular/material/core';
-import {CommonModule} from '@angular/common';
+import { Component } from '@angular/core';
+
+import { HeaderComponent } from './components/header/header.component';
 
 @Component({
   selector: 'app-root',
-  imports: [
-    CommonModule,
-    HeaderComponent,
-    RouterOutlet,
-    MatFormFieldModule
-  ],
-  providers: [
-    provideNativeDateAdapter()
-  ],
+  imports: [HeaderComponent, RouterOutlet, MatFormFieldModule],
+  providers: [provideNativeDateAdapter()],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   standalone: true,
