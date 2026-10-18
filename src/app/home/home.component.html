@@ -1,7 +1,118 @@
-<!-- Витрина -->
-
 <section class="home-page">
   <p class="home-page__title">Главная страница</p>
 
-  <button class="home-page__button" mat-flat-button (click)="goToProductPage()">Ссылка на страница продукта</button>
+  <button class="home-page__button" mat-flat-button (click)="goToProductPage()">
+    Ссылка на страницу продукта
+  </button>
+
+  <div class="sse-panel">
+    <div class="sse-panel__header">
+      <h2 class="sse-panel__title">
+        <mat-icon>sensors</mat-icon>
+        Live-обновления (SSE)
+      </h2>
+
+      <div class="sse-panel__controls">
+        <span
+          class="sse-panel__status"
+          [ngClass]="'sse-panel__status--' + connectionStatus()"
+        >
+          <span class="sse-panel__dot"></span>
+          @switch (connectionStatus()) {
+            @case ("connected") {
+              Подключено
+            }
+            @case ("connecting") {
+              Подключение…
+            }
+            @case ("error") {
+              Ошибка
+            }
+            @default {
+              Отключено
+            }
+          }
+        </span>
+
+        <button
+          mat-flat-button
+          [color]="isConnected() ? 'warn' : 'primary'"
+          (click)="toggleConnection()"
+        >
+          <mat-icon>{{ isConnected() ? "stop" : "play_arrow" }}</mat-icon>
+          {{ isConnected() ? "Отключить" : "Подключить" }}
+        </button>
+
+        <button mat-stroked-button (click)="clearMessages()">
+          <mat-icon>clear_all</mat-icon>
+          Очистить
+        </button>
+      </div>
+    </div>
+
+    <!-- Обновления продуктов -->
+    @if (productUpdates().length > 0) {
+      <div class="sse-panel__section">
+        <h3 class="sse-panel__subtitle">Обновления продуктов</h3>
+        <div class="product-updates">
+          @for (
+            update of productUpdates();
+            track update.productId + update.timestamp
+          ) {
+            <mat-card class="product-update-card" appearance="outlined">
+              <mat-card-content>
+                <div class="product-update-card__row">
+                  <strong>{{ update.name }}</strong>
+                  <span class="product-update-card__price">
+                    {{ update.price | currency: "RUB" : "symbol" : "1.0-0" }}
+                  </span>
+                </div>
+                @if (update.discount) {
+                  <mat-chip class="product-update-card__discount">
+                    -{{ update.discount }}%
+                  </mat-chip>
+                }
+                <div class="product-update-card__time">
+                  {{ update.timestamp | date: "HH:mm:ss" }}
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Общие сообщения -->
+    <div class="sse-panel__section">
+      <h3 class="sse-panel__subtitle">
+        Сообщения
+        <span class="sse-panel__count">({{ messages().length }})</span>
+      </h3>
+
+      @if (messages().length === 0) {
+        <p class="sse-panel__empty">
+          Сообщений пока нет. Нажмите «Подключить», чтобы начать получать поток.
+        </p>
+      } @else {
+        <div class="sse-messages">
+          @for (msg of messages(); track msg.id ?? msg.timestamp) {
+            <div class="sse-message" [ngClass]="'sse-message--' + msg.type">
+              <div class="sse-message__header">
+                <span class="sse-message__type">{{ msg.type }}</span>
+                <span class="sse-message__time">
+                  {{ msg.timestamp | date: "HH:mm:ss" }}
+                </span>
+              </div>
+              <div class="sse-message__body">
+                {{ msg.message }}
+                @if (msg.value !== undefined) {
+                  <span class="sse-message__value">{{ msg.value }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
 </section>
