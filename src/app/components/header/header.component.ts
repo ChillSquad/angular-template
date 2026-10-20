@@ -1,9 +1,8 @@
-import { TitleCasePipe } from '@angular/common';
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-header',
-  imports: [TitleCasePipe],
+  imports: [],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })

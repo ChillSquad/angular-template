@@ -8,51 +8,47 @@ import { Subscription } from 'rxjs';
 import { SseMessage } from '../models/sse-message.model';
 import { SseService } from '../services/sse.service';
 
-const SSE_URL = 'http://localhost:3000/sse';
+const SSE_BASE = 'http://localhost:3000';
+const SSE_URL = `${SSE_BASE}/sse`;
 
 @Component({
   selector: 'app-home',
-  standalone: true,
-  imports: [CommonModule, DatePipe, MatButtonModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
+  standalone: true,
+  imports: [CommonModule, DatePipe, MatButtonModule],
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private sseService = inject(SseService);
   private router = inject(Router);
 
   readonly messages = signal<SseMessage[]>([]);
-  readonly isConnected = signal(false);
 
-  private subscription?: Subscription;
+  readonly desiredPresence = signal(false);
+
+  private sseSub?: Subscription;
 
   ngOnInit(): void {
-    this.connect();
+    this.sseSub = this.sseService.connect<SseMessage>(SSE_URL).subscribe({
+      next: (msg) => {
+        this.messages.update((list) => [msg, ...list].slice(0, 50));
+      },
+      error: (err) => console.error(err),
+    });
   }
 
   goToProductPage(): void {
     this.router.navigate(['/product-page']);
   }
 
-  connect(): void {
-    if (this.isConnected()) return;
-
-    this.subscription = this.sseService.connect<SseMessage>(SSE_URL).subscribe({
-      next: (msg) => {
-        this.isConnected.set(true);
-        this.messages.update((list) => [msg, ...list].slice(0, 20));
-      },
-      error: (err) => {
-        console.error(err);
-        this.isConnected.set(false);
-      },
-    });
+  async joinServer(): Promise<void> {
+    this.desiredPresence.set(true);
+    await this.sseService.join(SSE_BASE);
   }
 
-  disconnect(): void {
-    this.subscription?.unsubscribe();
-    this.subscription = undefined;
-    this.isConnected.set(false);
+  async leaveServer(): Promise<void> {
+    this.desiredPresence.set(false);
+    await this.sseService.leave(SSE_BASE);
   }
 
   clear(): void {
@@ -60,6 +56,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.disconnect();
+    this.sseSub?.unsubscribe();
   }
 }

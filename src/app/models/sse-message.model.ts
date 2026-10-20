@@ -1,5 +1,6 @@
 export interface SseMessage {
   id: number;
-  message: string;
+  online: boolean;
+  lastSeen: string | null;
   timestamp: string;
 }

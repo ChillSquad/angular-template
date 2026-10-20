@@ -1,40 +1,75 @@
 const http = require("http");
 const PORT = 3000;
 
+let present = false;
+let lastSeen = null;
+let counter = 0;
+const clients = new Set();
+
+function makeMessage() {
+  counter++;
+  return {
+    id: counter,
+    online: present,
+    lastSeen: lastSeen ? lastSeen.toISOString() : null,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function broadcast() {
+  const payload = `data: ${JSON.stringify(makeMessage())}\n\n`;
+  for (const res of clients) res.write(payload);
+  console.log(`[tick #${counter}] present=${present}, clients=${clients.size}`);
+}
+
+setInterval(broadcast, 3000);
+
 http
   .createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.url !== "/sse") {
-      res.writeHead(404);
-      return res.end("Not found");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      return res.end();
     }
 
-    res.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    });
+    if (req.method === "POST" && req.url === "/join") {
+      present = true;
+      lastSeen = new Date();
+      console.log("[join] present=true (next tick will reflect it)");
+      res.writeHead(204);
+      return res.end();
+    }
 
-    let counter = 0;
+    if (req.method === "POST" && req.url === "/leave") {
+      present = false;
+      lastSeen = new Date();
+      console.log("[leave] present=false (next tick will reflect it)");
+      res.writeHead(204);
+      return res.end();
+    }
 
-    const send = () => {
-      counter++;
-      const payload = {
-        id: counter,
-        message: `Сообщение №${counter}`,
-        timestamp: new Date().toISOString(),
-      };
-      res.write(`data: ${JSON.stringify(payload)}\n\n`);
-    };
+    if (req.method === "GET" && req.url === "/sse") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      });
 
-    send(); // сразу одно сообщение
-    const interval = setInterval(send, 2000);
+      clients.add(res);
+      console.log(`[sse connect] clients=${clients.size}`);
 
-    req.on("close", () => {
-      clearInterval(interval);
-      console.log("client disconnected");
-    });
+      req.on("close", () => {
+        clients.delete(res);
+        console.log(`[sse disconnect] clients=${clients.size}`);
+      });
+      return;
+    }
+
+    res.writeHead(404);
+    res.end("Not found");
   })
   .listen(PORT, () => {
     console.log(`SSE Server: http://localhost:${PORT}/sse`);

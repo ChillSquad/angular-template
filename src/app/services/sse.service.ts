@@ -29,6 +29,14 @@ export class SseService implements OnDestroy {
     });
   }
 
+  join(baseUrl: string): Promise<void> {
+    return fetch(`${baseUrl}/join`, { method: 'POST' }).then(() => undefined);
+  }
+
+  leave(baseUrl: string): Promise<void> {
+    return fetch(`${baseUrl}/leave`, { method: 'POST' }).then(() => undefined);
+  }
+
   ngOnDestroy(): void {
     this.eventSource?.close();
   }

@@ -3,40 +3,42 @@
 
   <div class="sse-panel">
     <div class="sse-panel__header">
-      <h2 class="sse-panel__title">SSE</h2>
+      <h2 class="sse-panel__title">SSE: Статус пользователя</h2>
 
       <div class="sse-panel__controls">
         <span
           class="sse-panel__status"
-          [class.sse-panel__status--on]="isConnected()"
+          [class.sse-panel__status--on]="desiredPresence()"
         >
-          {{ isConnected() ? "Подключено" : "Отключено" }}
+          {{ desiredPresence() ? "Вы в сети" : "Вы не в сети" }}
         </span>
 
-        <button
-          mat-flat-button
-          [color]="isConnected() ? 'warn' : 'primary'"
-          (click)="isConnected() ? disconnect() : connect()"
-        >
-          {{ isConnected() ? "Отключить" : "Подключить" }}
-        </button>
+        @if (!desiredPresence()) {
+          <button mat-flat-button color="primary" (click)="joinServer()">
+            Подключиться к серверу
+          </button>
+        } @else {
+          <button mat-flat-button color="warn" (click)="leaveServer()">
+            Покинуть сервер
+          </button>
+        }
 
         <button mat-stroked-button (click)="clear()">Очистить</button>
       </div>
     </div>
 
-    @if (messages().length === 0) {
-      <p class="sse-panel__empty">Сообщений пока нет</p>
-    } @else {
-      <div class="sse-messages">
-        @for (msg of messages(); track msg.id) {
-          <div class="sse-message">
-            <span class="sse-message__id">#{{ msg.id }}</span>
-            <span class="sse-message__text">{{ msg.message }}</span>
-            <span class="sse-message__time">{{ msg.timestamp | date: "HH:mm:ss" }}</span>
-          </div>
-        }
-      </div>
-    }
+    <div class="sse-messages">
+      @for (msg of messages(); track msg.id) {
+        <div class="sse-message" [class.sse-message--online]="msg.online">
+          <span class="sse-message__id">#{{ msg.id }}</span>
+          <span class="sse-message__text">
+            {{ msg.online ? "Пользователь в сети" : "Пользователь не в сети" }}
+          </span>
+          <span class="sse-message__time">
+            {{ msg.timestamp | date: "HH:mm:ss" }}
+          </span>
+        </div>
+      }
+    </div>
   </div>
 </section>
