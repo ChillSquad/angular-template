@@ -1,15 +1,5 @@
 export interface SseMessage {
-  id?: number;
-  type: string;
+  id: number;
   message: string;
-  value?: number;
-  timestamp: string;
-}
-
-export interface ProductUpdate {
-  productId: number;
-  name: string;
-  price: number;
-  discount?: number;
   timestamp: string;
 }
