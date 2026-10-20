@@ -23,18 +23,19 @@ export class HomeComponent implements OnInit, OnDestroy {
   private router = inject(Router);
 
   readonly messages = signal<SseMessage[]>([]);
-
   readonly desiredPresence = signal(false);
 
   private sseSub?: Subscription;
 
   ngOnInit(): void {
-    this.sseSub = this.sseService.connect<SseMessage>(SSE_URL).subscribe({
-      next: (msg) => {
-        this.messages.update((list) => [msg, ...list].slice(0, 50));
-      },
-      error: (err) => console.error(err),
-    });
+    this.sseSub = this.sseService
+      .connect<SseMessage>(SSE_URL, () => this.syncPresence())
+      .subscribe({
+        next: (msg) => {
+          this.messages.update((list) => [msg, ...list].slice(0, 50));
+        },
+        error: (err) => console.error(err),
+      });
   }
 
   goToProductPage(): void {
@@ -43,12 +44,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   async joinServer(): Promise<void> {
     this.desiredPresence.set(true);
-    await this.sseService.join(SSE_BASE);
+    await this.syncPresence();
   }
 
   async leaveServer(): Promise<void> {
     this.desiredPresence.set(false);
-    await this.sseService.leave(SSE_BASE);
+    await this.syncPresence();
   }
 
   clear(): void {
@@ -57,5 +58,16 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sseSub?.unsubscribe();
+  }
+
+  private async syncPresence(): Promise<void> {
+    const wantOnline = this.desiredPresence();
+    const ok = wantOnline
+      ? await this.sseService.join(SSE_BASE)
+      : await this.sseService.leave(SSE_BASE);
+
+    if (!ok) {
+      setTimeout(() => this.syncPresence(), 2000);
+    }
   }
 }

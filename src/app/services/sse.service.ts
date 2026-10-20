@@ -5,12 +5,13 @@ import { Observable } from 'rxjs';
 export class SseService implements OnDestroy {
   private eventSource?: EventSource;
 
-  connect<T>(url: string): Observable<T> {
+  connect<T>(url: string, onOpen?: () => void): Observable<T> {
     return new Observable<T>((subscriber) => {
       this.eventSource = new EventSource(url);
 
       this.eventSource.onopen = () => {
         console.log('[SSE] connected:', url);
+        onOpen?.();
       };
 
       this.eventSource.onmessage = (event: MessageEvent) => {
@@ -29,12 +30,27 @@ export class SseService implements OnDestroy {
     });
   }
 
-  join(baseUrl: string): Promise<void> {
-    return fetch(`${baseUrl}/join`, { method: 'POST' }).then(() => undefined);
+  async join(baseUrl: string): Promise<boolean> {
+    return this.post(baseUrl, '/join');
   }
 
-  leave(baseUrl: string): Promise<void> {
-    return fetch(`${baseUrl}/leave`, { method: 'POST' }).then(() => undefined);
+  async leave(baseUrl: string): Promise<boolean> {
+    return this.post(baseUrl, '/leave');
+  }
+
+  private async post(baseUrl: string, path: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${baseUrl}${path}`, { method: 'POST' });
+      if (!res.ok) {
+        console.error(`[SSE] POST ${path} failed: ${res.status}`);
+        return false;
+      }
+      console.log(`[SSE] POST ${path} ok`);
+      return true;
+    } catch (err) {
+      console.error(`[SSE] POST ${path} network error:`, err);
+      return false;
+    }
   }
 
   ngOnDestroy(): void {
